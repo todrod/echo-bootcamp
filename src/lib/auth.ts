@@ -67,16 +67,35 @@ export async function clearSessionCookie() {
 
 export async function getCurrentUser() {
   if (AUTH_DISABLED) {
-    return prisma.user.upsert({
+    const existing = await prisma.user.findUnique({
       where: { username: "local_admin" },
-      update: { isAdmin: true },
-      create: {
-        username: "local_admin",
-        passwordHash: await hashPassword("disabled-auth"),
-        isAdmin: true,
-      },
       select: { id: true, username: true, isAdmin: true },
     });
+    if (existing) {
+      if (!existing.isAdmin) {
+        await prisma.user.update({
+          where: { id: existing.id },
+          data: { isAdmin: true },
+        });
+      }
+      return { ...existing, isAdmin: true };
+    }
+
+    try {
+      return await prisma.user.create({
+        data: {
+          username: "local_admin",
+          passwordHash: await hashPassword("disabled-auth"),
+          isAdmin: true,
+        },
+        select: { id: true, username: true, isAdmin: true },
+      });
+    } catch {
+      return prisma.user.findUnique({
+        where: { username: "local_admin" },
+        select: { id: true, username: true, isAdmin: true },
+      });
+    }
   }
 
   const store = await cookies();
