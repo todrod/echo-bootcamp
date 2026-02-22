@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 
 const COOKIE_NAME = "eb_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
+const AUTH_DISABLED = process.env.AUTH_DISABLED === "true";
 
 type SessionPayload = {
   userId: number;
@@ -65,6 +66,19 @@ export async function clearSessionCookie() {
 }
 
 export async function getCurrentUser() {
+  if (AUTH_DISABLED) {
+    return prisma.user.upsert({
+      where: { username: "local_admin" },
+      update: { isAdmin: true },
+      create: {
+        username: "local_admin",
+        passwordHash: await hashPassword("disabled-auth"),
+        isAdmin: true,
+      },
+      select: { id: true, username: true, isAdmin: true },
+    });
+  }
+
   const store = await cookies();
   const token = store.get(COOKIE_NAME)?.value;
   const session = decodeSession(token);
