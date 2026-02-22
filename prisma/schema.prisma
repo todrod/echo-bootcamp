@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum CategoryCode {
+  A
+  B
+  C
+  D
+  E
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum AttemptMode {
+  FULL
+  PRACTICE
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  FINISHED
+  EXPIRED
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  username     String    @unique @db.VarChar(64)
+  passwordHash String
+  isAdmin      Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  attempts     Attempt[]
+}
+
+model Question {
+  id            Int            @id
+  stem          String         @db.Text
+  explanation   String?        @db.Text
+  category      CategoryCode?
+  difficulty    Difficulty?
+  tagConfidence Float?
+  createdAt     DateTime       @default(now())
+  choices       Choice[]
+  correctAnswer CorrectAnswer?
+  questionTags  QuestionTag[]
+  attemptItems  AttemptQuestion[]
+  attemptAnswer AttemptAnswer[]
+}
+
+model Choice {
+  id         Int      @id @default(autoincrement())
+  questionId Int
+  label      String   @db.VarChar(1)
+  text       String   @db.Text
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, label])
+  @@index([questionId])
+}
+
+model CorrectAnswer {
+  questionId   Int      @id
+  correctLabel String   @db.VarChar(1)
+  question     Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model Tag {
+  id           Int           @id @default(autoincrement())
+  code         String        @unique @db.VarChar(64)
+  name         String        @db.VarChar(255)
+  questionTags QuestionTag[]
+}
+
+model QuestionTag {
+  questionId Int
+  tagId      Int
+  confidence Float
+  createdAt  DateTime @default(now())
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, tagId])
+  @@index([tagId])
+}
+
+model Weight {
+  categoryCode CategoryCode @id
+  weight       Float
+}
+
+model Attempt {
+  id                   String         @id @default(cuid())
+  userId               Int
+  mode                 AttemptMode
+  totalQuestions       Int
+  timed                Boolean
+  timeLimitMinutes     Int?
+  status               AttemptStatus  @default(IN_PROGRESS)
+  startedAt            DateTime       @default(now())
+  finishedAt           DateTime?
+  lastSeenAt           DateTime?
+  lastViewedQuestionIndex Int         @default(0)
+  useWeighting         Boolean        @default(true)
+  categoriesJson       String?        @db.Text
+  user                 User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attemptQuestions     AttemptQuestion[]
+  answers              AttemptAnswer[]
+
+  @@index([userId, status])
+  @@index([startedAt])
+}
+
+model AttemptQuestion {
+  attemptId  String
+  questionId Int
+  orderIndex Int
+  attempt    Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([attemptId, questionId])
+  @@unique([attemptId, orderIndex])
+  @@index([questionId])
+}
+
+model AttemptAnswer {
+  attemptId       String
+  questionId      Int
+  selectedLabel   String?  @db.VarChar(1)
+  isCorrect       Boolean?
+  markedForReview Boolean  @default(false)
+  answeredAt      DateTime?
+  attempt         Attempt   @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question        Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([attemptId, questionId])
+  @@index([questionId])
+}
