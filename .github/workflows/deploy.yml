@@ -44,6 +44,7 @@ jobs:
       - name: Prepare SSH key
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
@@ -51,16 +52,26 @@ jobs:
           : > ~/.ssh/known_hosts
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/vps_key
           chmod 600 ~/.ssh/vps_key
-          for i in 1 2 3; do
-            if ssh-keyscan -T 10 -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null; then
-              break
-            fi
-            if [ "$i" -eq 3 ]; then
-              echo "Failed to fetch SSH host key from $DEPLOY_HOST:$DEPLOY_PORT"
-              exit 1
-            fi
-            sleep 2
-          done
+
+          # Preferred: pinned host keys from repo secret (stable, no network lookup race).
+          if [ -n "${VPS_KNOWN_HOSTS:-}" ]; then
+            printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            # Fallback: best-effort keyscan with retries.
+            for i in 1 2 3 4 5; do
+              if ssh-keyscan -T 15 -t ed25519,rsa -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null; then
+                break
+              fi
+              if [ "$i" -eq 5 ]; then
+                echo "Failed to fetch SSH host key from $DEPLOY_HOST:$DEPLOY_PORT"
+                echo "Set secret VPS_KNOWN_HOSTS to avoid this failure in the future."
+                exit 1
+              fi
+              sleep 3
+            done
+          fi
+
+          [ -s ~/.ssh/known_hosts ] || { echo "known_hosts is empty"; exit 1; }
           chmod 644 ~/.ssh/known_hosts
 
       - name: Preflight SSH connectivity
