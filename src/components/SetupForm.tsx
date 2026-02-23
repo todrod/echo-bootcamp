@@ -8,7 +8,13 @@ type SetupFormProps = {
   mode: "FULL" | "PRACTICE";
 };
 
-const categories = ["A", "B", "C", "D", "E"] as const;
+const categories = [
+  { code: "A", label: "Patient Care / Non-Imaging" },
+  { code: "B", label: "Imaging / Acquisition" },
+  { code: "C", label: "Valves" },
+  { code: "D", label: "Anatomy / Physiology / Hemodynamics / Pathology" },
+  { code: "E", label: "Physics / Instrumentation" },
+] as const;
 
 export function SetupForm({ mode }: SetupFormProps) {
   const router = useRouter();
@@ -123,13 +129,14 @@ export function SetupForm({ mode }: SetupFormProps) {
         <p className="mb-2 text-sm font-medium">Categories (leave empty = All)</p>
         <div className="flex flex-wrap gap-2">
           {categories.map((cat) => (
-            <label key={cat} className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-1 text-sm">
+            <label key={cat.code} className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-1 text-sm">
               <input
                 type="checkbox"
-                checked={selectedCategories.includes(cat)}
-                onChange={() => toggleCategory(cat)}
+                checked={selectedCategories.includes(cat.code)}
+                onChange={() => toggleCategory(cat.code)}
               />
-              {cat}
+              <span className="font-semibold">{cat.code}</span>
+              <span>{cat.label}</span>
             </label>
           ))}
         </div>
