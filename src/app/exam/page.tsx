@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { computeRemainingSeconds } from "@/lib/exam";
@@ -18,8 +19,20 @@ export default async function ExamHomePage() {
   return (
     <main className="mx-auto max-w-5xl p-6">
       <div className="rounded-2xl bg-white p-6 shadow-sm">
-        <h1 className="text-3xl font-semibold">Echo Bootcamp Exam</h1>
-        <p className="mt-2 text-sm text-slate-600">Welcome, {user.username}.</p>
+        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold">Echo Bootcamp Exam</h1>
+            <p className="mt-2 text-sm text-slate-600">Welcome, {user.username}.</p>
+          </div>
+          <Image
+            src="/todrod-echo-bootcamp-logo.png"
+            alt="Todrod Echo Bootcamp logo"
+            width={180}
+            height={180}
+            className="h-auto w-32 sm:w-40"
+            priority
+          />
+        </div>
         {inProgress ? (
           <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm">
             <p>

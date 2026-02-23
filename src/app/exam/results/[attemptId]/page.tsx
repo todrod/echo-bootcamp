@@ -20,6 +20,8 @@ export default async function ResultsPage({ params }: { params: Promise<{ attemp
   return (
     <main className="mx-auto max-w-6xl p-6">
       <ResultsClient
+        attemptId={data.attempt.id}
+        mode={data.attempt.mode}
         percent={data.percent}
         totalCorrect={data.totalCorrect}
         totalQuestions={data.attempt.totalQuestions}

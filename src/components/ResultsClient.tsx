@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/client";
 
 type ReviewItem = {
   orderIndex: number;
@@ -17,6 +19,8 @@ type ReviewItem = {
 };
 
 type Props = {
+  attemptId: string;
+  mode: "FULL" | "PRACTICE";
   percent: number;
   totalCorrect: number;
   totalQuestions: number;
@@ -29,8 +33,26 @@ type Props = {
 };
 
 export function ResultsClient(props: Props) {
+  const router = useRouter();
   const [showCorrect, setShowCorrect] = useState(true);
   const [showExplanations, setShowExplanations] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+
+  async function retrySameTest() {
+    setRetrying(true);
+    try {
+      const res = await apiFetch<{ attemptId: string }>(`/api/attempts/${props.attemptId}/retry`, {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+      router.push(`/exam/session/${res.attemptId}`);
+    } catch (error) {
+      // Keep fallback simple in v1.
+      alert(error instanceof Error ? error.message : "Could not retry test");
+    } finally {
+      setRetrying(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -39,6 +61,27 @@ export function ResultsClient(props: Props) {
         <p className="mt-2 text-sm text-slate-600">
           Score: {props.totalCorrect}/{props.totalQuestions} ({props.percent}%) • Time used: {props.timeUsedMinutes} min
         </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            onClick={() => router.push("/exam")}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            Return to Bootcamp
+          </button>
+          <button
+            onClick={() => void retrySameTest()}
+            disabled={retrying}
+            className="rounded-lg bg-cyan-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {retrying ? "Starting..." : "Retry same test"}
+          </button>
+          <button
+            onClick={() => router.push(props.mode === "FULL" ? "/exam/full/setup" : "/exam/practice/setup")}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            Try different setup
+          </button>
+        </div>
       </section>
 
       <section className="rounded-2xl bg-white p-6 shadow-sm">
