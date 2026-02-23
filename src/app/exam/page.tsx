@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { computeRemainingSeconds } from "@/lib/exam";
 
 export default async function ExamHomePage() {
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "/echo-bootcamp";
   const logoSrc = `${basePath}/todrod-echo-bootcamp-logo.png`;
   const user = await requireUser();
   const inProgress = await prisma.attempt.findFirst({
@@ -20,16 +20,16 @@ export default async function ExamHomePage() {
   return (
     <main className="mx-auto max-w-6xl p-6">
       <div className="rounded-2xl border border-white/12 bg-black/30 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur">
-        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <img
+            src={logoSrc}
+            alt="Todrod Echo Bootcamp logo"
+            className="h-auto w-[190px] rounded-xl border border-white/10 bg-white/5 p-1 sm:w-[220px]"
+          />
           <div>
             <h1 className="text-3xl font-semibold text-white">Echo Bootcamp Exam</h1>
             <p className="mt-2 text-sm text-slate-300">Welcome, {user.username}.</p>
           </div>
-          <img
-            src={logoSrc}
-            alt="Todrod Echo Bootcamp logo"
-            className="h-auto w-36 rounded-xl border border-white/10 bg-white/5 p-1 sm:w-44"
-          />
         </div>
         {inProgress ? (
           <div className="mt-4 rounded-lg border border-amber-300/50 bg-amber-500/10 p-3 text-sm text-amber-100">
@@ -37,7 +37,7 @@ export default async function ExamHomePage() {
               In-progress attempt found ({inProgress.mode}) • Remaining:
               {remainingSeconds === null ? " untimed" : ` ${Math.max(0, Math.floor(remainingSeconds / 60))} min`}
             </p>
-            <Link href={`/exam/session/${inProgress.id}`} className="mt-2 inline-block rounded-lg bg-cyan-500 px-3 py-1 text-slate-950">
+            <Link href={`/exam/session/${inProgress.id}`} className="mt-2 inline-block rounded-lg bg-cyan-500 px-3 py-1 font-medium text-slate-950 hover:bg-cyan-400">
               Resume
             </Link>
           </div>
