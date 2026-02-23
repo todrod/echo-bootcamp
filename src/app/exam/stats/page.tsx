@@ -28,18 +28,18 @@ export default async function StatsPage() {
 
   return (
     <main className="mx-auto max-w-5xl p-6">
-      <section className="rounded-2xl bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold">Exam Stats</h1>
-        <p className="mt-2 text-sm text-slate-600">
+      <section className="rounded-2xl border border-white/12 bg-black/30 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur">
+        <h1 className="text-2xl font-semibold text-white">Exam Stats</h1>
+        <p className="mt-2 text-sm text-slate-300">
           Completed attempts: {scores.length} • Average score: {avg}%
         </p>
       </section>
 
-      <section className="mt-6 rounded-2xl bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">Recent attempts</h2>
+      <section className="mt-6 rounded-2xl border border-white/12 bg-black/30 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur">
+        <h2 className="text-lg font-semibold text-white">Recent attempts</h2>
         <table className="mt-3 w-full text-sm">
           <thead>
-            <tr className="text-left text-slate-500">
+            <tr className="text-left text-slate-300">
               <th>Date</th>
               <th>Mode</th>
               <th>Status</th>
@@ -48,7 +48,7 @@ export default async function StatsPage() {
           </thead>
           <tbody>
             {scores.map((s) => (
-              <tr key={s.id} className="border-t border-slate-100">
+              <tr key={s.id} className="border-t border-white/10 text-slate-100">
                 <td className="py-2">{s.date.toLocaleString()}</td>
                 <td>{s.mode}</td>
                 <td>{s.status}</td>

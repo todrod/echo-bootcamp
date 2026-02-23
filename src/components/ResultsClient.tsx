@@ -56,39 +56,39 @@ export function ResultsClient(props: Props) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold">Results ({props.status})</h1>
-        <p className="mt-2 text-sm text-slate-600">
+      <section className="rounded-2xl border border-white/12 bg-black/30 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur">
+        <h1 className="text-2xl font-semibold text-white">Results ({props.status})</h1>
+        <p className="mt-2 text-sm text-slate-300">
           Score: {props.totalCorrect}/{props.totalQuestions} ({props.percent}%) • Time used: {props.timeUsedMinutes} min
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             onClick={() => router.push("/exam")}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-sm text-slate-100 hover:border-cyan-300/50 hover:bg-cyan-500/10"
           >
             Return to Bootcamp
           </button>
           <button
             onClick={() => void retrySameTest()}
             disabled={retrying}
-            className="rounded-lg bg-cyan-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="rounded-lg bg-cyan-500 px-3 py-2 text-sm font-medium text-slate-950 hover:bg-cyan-400 disabled:opacity-50"
           >
             {retrying ? "Starting..." : "Retry same test"}
           </button>
           <button
             onClick={() => router.push(props.mode === "FULL" ? "/exam/full/setup" : "/exam/practice/setup")}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-sm text-slate-100 hover:border-cyan-300/50 hover:bg-cyan-500/10"
           >
             Try different setup
           </button>
         </div>
       </section>
 
-      <section className="rounded-2xl bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">Category breakdown</h2>
+      <section className="rounded-2xl border border-white/12 bg-black/30 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur">
+        <h2 className="text-lg font-semibold text-white">Category breakdown</h2>
         <table className="mt-3 w-full text-sm">
           <thead>
-            <tr className="text-left text-slate-600">
+            <tr className="text-left text-slate-300">
               <th>Category</th>
               <th>Correct</th>
               <th>Total</th>
@@ -97,7 +97,7 @@ export function ResultsClient(props: Props) {
           </thead>
           <tbody>
             {props.categoryBreakdown.map((c) => (
-              <tr key={c.category} className="border-t border-slate-100">
+              <tr key={c.category} className="border-t border-white/10 text-slate-100">
                 <td className="py-2">{c.category} - {c.label}</td>
                 <td>{c.correct}</td>
                 <td>{c.total}</td>
@@ -109,17 +109,17 @@ export function ResultsClient(props: Props) {
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">Weakest categories</h2>
-          <ul className="mt-2 space-y-2 text-sm">
+        <div className="rounded-2xl border border-white/12 bg-black/30 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur">
+          <h2 className="text-lg font-semibold text-white">Weakest categories</h2>
+          <ul className="mt-2 space-y-2 text-sm text-slate-200">
             {props.weakestCategories.map((c) => (
               <li key={c.category}>{c.category} - {c.label}: {c.percent}%</li>
             ))}
           </ul>
         </div>
-        <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">Missed-most questions</h2>
-          <ul className="mt-2 space-y-2 text-sm">
+        <div className="rounded-2xl border border-white/12 bg-black/30 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur">
+          <h2 className="text-lg font-semibold text-white">Missed-most questions</h2>
+          <ul className="mt-2 space-y-2 text-sm text-slate-200">
             {props.missedMost.map((m) => (
               <li key={m.questionId}>#{m.questionId} ({m.misses} misses): {m.stem.slice(0, 80)}...</li>
             ))}
@@ -127,8 +127,8 @@ export function ResultsClient(props: Props) {
         </div>
       </section>
 
-      <section className="rounded-2xl bg-white p-6 shadow-sm">
-        <div className="mb-4 flex gap-4 text-sm">
+      <section className="rounded-2xl border border-white/12 bg-black/30 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur">
+        <div className="mb-4 flex gap-4 text-sm text-slate-200">
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={showCorrect} onChange={(e) => setShowCorrect(e.target.checked)} />
             Show correct answers
@@ -141,26 +141,26 @@ export function ResultsClient(props: Props) {
 
         <div className="space-y-4">
           {props.review.map((item) => (
-            <div key={item.questionId} className="rounded-lg border border-slate-200 p-4">
-              <p className="text-sm text-slate-500">Q{item.orderIndex + 1} • Category {item.category}</p>
-              <p className="font-medium">{item.stem}</p>
-              <ul className="mt-2 space-y-1 text-sm">
+            <div key={item.questionId} className="rounded-lg border border-white/12 bg-black/20 p-4">
+              <p className="text-sm text-slate-400">Q{item.orderIndex + 1} • Category {item.category}</p>
+              <p className="font-medium text-slate-100">{item.stem}</p>
+              <ul className="mt-2 space-y-1 text-sm text-slate-200">
                 {item.choices.map((choice) => {
                   const isUser = item.userAnswer === choice.label;
                   const isCorrect = item.correctLabel === choice.label;
                   return (
-                    <li key={choice.id} className={`${isUser ? "font-semibold" : ""} ${showCorrect && isCorrect ? "text-emerald-700" : ""}`}>
+                    <li key={choice.id} className={`${isUser ? "font-semibold" : ""} ${showCorrect && isCorrect ? "text-emerald-400" : ""}`}>
                       {choice.label}. {choice.text}
                     </li>
                   );
                 })}
               </ul>
-              <p className={`mt-2 text-sm ${item.isCorrect ? "text-emerald-700" : "text-red-700"}`}>
+              <p className={`mt-2 text-sm ${item.isCorrect ? "text-emerald-400" : "text-red-300"}`}>
                 Your answer: {item.userAnswer ?? "Unanswered"}
                 {showCorrect ? ` • Correct: ${item.correctLabel}` : ""}
               </p>
               {showExplanations && item.explanation ? (
-                <p className="mt-2 text-sm text-slate-700">Explanation: {item.explanation}</p>
+                <p className="mt-2 text-sm text-slate-300">Explanation: {item.explanation}</p>
               ) : null}
             </div>
           ))}

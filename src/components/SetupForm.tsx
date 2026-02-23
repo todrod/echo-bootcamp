@@ -83,13 +83,13 @@ export function SetupForm({ mode }: SetupFormProps) {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-6 rounded-2xl bg-white p-6 shadow-sm">
-      <h1 className="text-2xl font-semibold">{mode === "FULL" ? "Full Exam Setup" : "Practice Setup"}</h1>
+    <form onSubmit={submit} className="space-y-6 rounded-2xl border border-white/12 bg-black/30 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur">
+      <h1 className="text-2xl font-semibold text-white">{mode === "FULL" ? "Full Exam Setup" : "Practice Setup"}</h1>
       {resumeAttemptId ? (
         <button
           type="button"
           onClick={() => router.push(`/exam/session/${resumeAttemptId}`)}
-          className="rounded-lg border border-amber-400 bg-amber-50 px-3 py-1 text-sm"
+          className="rounded-lg border border-amber-300/50 bg-amber-500/10 px-3 py-1 text-sm text-amber-100"
         >
           Resume in-progress attempt
         </button>
@@ -97,13 +97,13 @@ export function SetupForm({ mode }: SetupFormProps) {
 
       {mode === "PRACTICE" ? (
         <div>
-          <p className="mb-2 text-sm font-medium">Question count</p>
+          <p className="mb-2 text-sm font-medium text-slate-100">Question count</p>
           <div className="flex flex-wrap gap-2">
             {[25, 50, 75, 100].map((n) => (
               <button
                 key={n}
                 type="button"
-                className={`rounded-lg border px-3 py-1 ${count === n ? "border-cyan-600 bg-cyan-50" : "border-slate-300"}`}
+                className={`rounded-lg border px-3 py-1 text-sm ${count === n ? "border-cyan-300/70 bg-cyan-500/20 text-cyan-100" : "border-white/20 bg-black/20 text-slate-200 hover:border-cyan-300/50 hover:bg-cyan-500/10"}`}
                 onClick={() => setCount(n)}
               >
                 {n}
@@ -115,21 +115,21 @@ export function SetupForm({ mode }: SetupFormProps) {
               max={170}
               value={count}
               onChange={(e) => setCount(Number(e.target.value))}
-              className="w-24 rounded-lg border border-slate-300 px-2 py-1"
+              className="w-24 rounded-lg border border-white/20 bg-black/20 px-2 py-1 text-slate-100"
             />
           </div>
         </div>
       ) : (
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+        <div className="rounded-lg border border-white/15 bg-white/5 p-3 text-sm text-slate-200">
           Exam mode is fixed to 170 questions.
         </div>
       )}
 
       <div>
-        <p className="mb-2 text-sm font-medium">Categories (leave empty = All)</p>
+        <p className="mb-2 text-sm font-medium text-slate-100">Categories (leave empty = All)</p>
         <div className="flex flex-wrap gap-2">
           {categories.map((cat) => (
-            <label key={cat.code} className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-1 text-sm">
+            <label key={cat.code} className="flex items-center gap-2 rounded-lg border border-white/20 bg-black/20 px-3 py-1 text-sm text-slate-100">
               <input
                 type="checkbox"
                 checked={selectedCategories.includes(cat.code)}
@@ -143,8 +143,8 @@ export function SetupForm({ mode }: SetupFormProps) {
       </div>
 
       <div>
-        <p className="mb-2 text-sm font-medium">Timing</p>
-        <div className="space-y-2 text-sm">
+        <p className="mb-2 text-sm font-medium text-slate-100">Timing</p>
+        <div className="space-y-2 text-sm text-slate-200">
           <label className="flex items-center gap-2">
             <input
               type="radio"
@@ -167,7 +167,7 @@ export function SetupForm({ mode }: SetupFormProps) {
                 max={240}
                 value={customMinutes}
                 onChange={(e) => setCustomMinutes(Number(e.target.value))}
-                className="w-24 rounded border border-slate-300 px-2 py-1"
+                className="w-24 rounded border border-white/20 bg-black/20 px-2 py-1 text-slate-100"
               />
               minutes
             </label>
@@ -186,7 +186,7 @@ export function SetupForm({ mode }: SetupFormProps) {
       </div>
 
       {mode === "PRACTICE" ? (
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 text-sm text-slate-200">
           <input
             type="checkbox"
             checked={useWeighting}
@@ -196,11 +196,11 @@ export function SetupForm({ mode }: SetupFormProps) {
         </label>
       ) : null}
 
-      {error ? <p className="text-sm text-red-700">{error}</p> : null}
+      {error ? <p className="text-sm text-red-300">{error}</p> : null}
 
       <button
         disabled={loading}
-        className="rounded-lg bg-cyan-700 px-4 py-2 font-medium text-white disabled:opacity-60"
+        className="rounded-lg bg-cyan-500 px-4 py-2 font-medium text-slate-950 hover:bg-cyan-400 disabled:opacity-60"
       >
         {loading ? "Creating..." : "Start session"}
       </button>
