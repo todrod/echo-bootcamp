@@ -34,6 +34,25 @@ jobs:
           printf '%s\n' "${{ secrets.VPS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
+      - name: SSH preflight with retries
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          set -euo pipefail
+          echo "Preflight target: $VPS_USER@$VPS_HOST:$VPS_PORT"
+          for attempt in 1 2 3 4 5; do
+            if ssh -o BatchMode=yes -o ConnectTimeout=15 -o ConnectionAttempts=1 -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "echo SSH preflight OK"; then
+              exit 0
+            fi
+            echo "SSH preflight attempt $attempt failed; retrying in 10s..."
+            sleep 10
+          done
+          echo "SSH preflight failed after retries"
+          exit 1
+
       - name: Deploy on VPS
         shell: bash
         env:
@@ -42,7 +61,12 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
         run: |
           set -euo pipefail
-          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" << 'EOF'
+
+          ssh \
+            -o ConnectTimeout=15 \
+            -o ConnectionAttempts=3 \
+            -o ServerAliveInterval=30 \
+            -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" << 'EOF'
           set -euo pipefail
 
           APP_PATH=/var/www/echo-bootcamp
@@ -60,36 +84,3 @@ jobs:
           pm2 restart "$APP_NAME" --update-env
           pm2 save
           EOF
-
-      - name: Deploy on VPS
-        shell: bash
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_PORT: ${{ secrets.VPS_PORT }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-        run: |
-          set -euo pipefail
-
-          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" << 'EOF'
-          set -euo pipefail
-
-          APP_PATH=/var/www/echo-bootcamp
-          APP_NAME=echo-bootcamp
-
-          cd "$APP_PATH"
-
-          # Pull latest
-          git fetch origin
-          git reset --hard origin/main
-
-          # Build and migrate in correct order
-          npm ci
-          npm run prisma:generate
-          npm run prisma:deploy
-          npm run build
-
-          # Restart app
-          pm2 restart "$APP_NAME" --update-env
-          pm2 save
-          EOF
-
