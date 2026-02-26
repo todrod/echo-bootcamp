@@ -17,12 +17,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for s in VPS_HOST VPS_PORT VPS_USER VPS_SSH_KEY VPS_KNOWN_HOSTS; do
-            if [ -z "${{ secrets[s] }}" ]; then
-              echo "Missing secret: $s"
-              exit 1
-            fi
-          done
+          [ -n "${{ secrets.VPS_HOST }}" ] || { echo "Missing secret: VPS_HOST"; exit 1; }
+          [ -n "${{ secrets.VPS_PORT }}" ] || { echo "Missing secret: VPS_PORT"; exit 1; }
+          [ -n "${{ secrets.VPS_USER }}" ] || { echo "Missing secret: VPS_USER"; exit 1; }
+          [ -n "${{ secrets.VPS_SSH_KEY }}" ] || { echo "Missing secret: VPS_SSH_KEY"; exit 1; }
+          [ -n "${{ secrets.VPS_KNOWN_HOSTS }}" ] || { echo "Missing secret: VPS_KNOWN_HOSTS"; exit 1; }
 
       - name: Setup SSH
         shell: bash
@@ -34,6 +33,33 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           printf '%s\n' "${{ secrets.VPS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
+
+      - name: Deploy on VPS
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          set -euo pipefail
+          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" << 'EOF'
+          set -euo pipefail
+
+          APP_PATH=/var/www/echo-bootcamp
+          APP_NAME=echo-bootcamp
+
+          cd "$APP_PATH"
+          git fetch origin
+          git reset --hard origin/main
+
+          npm ci
+          npm run prisma:generate
+          npm run prisma:deploy
+          npm run build
+
+          pm2 restart "$APP_NAME" --update-env
+          pm2 save
+          EOF
 
       - name: Deploy on VPS
         shell: bash
