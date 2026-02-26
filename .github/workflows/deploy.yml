@@ -1,132 +1,69 @@
-name: Deploy Echo Bootcamp to VPS
+name: Deploy Echo Bootcamp
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
-  workflow_dispatch:
-
-concurrency:
-  group: deploy-echo-bootcamp
-  cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Validate required secrets
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_PORT: ${{ secrets.VPS_PORT }}
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        shell: bash
         run: |
           set -euo pipefail
-          HOST="${VPS_HOST:-}"
-          USER="${VPS_USER:-}"
-          PORT="${VPS_PORT:-22}"
-          SSH_KEY="${VPS_SSH_KEY:-}"
-          [ -n "$HOST" ] || { echo "Missing secret: VPS_HOST"; exit 1; }
-          [ -n "$USER" ] || { echo "Missing secret: VPS_USER"; exit 1; }
-          [ -n "$SSH_KEY" ] || { echo "Missing secret: VPS_SSH_KEY"; exit 1; }
-          case "$PORT" in
-            ''|*[!0-9]*) echo "Invalid VPS_PORT: must be numeric"; exit 1 ;;
-          esac
-          printf '%s\n' "$SSH_KEY" | head -n 1 | grep -q "BEGIN OPENSSH PRIVATE KEY" || {
-            echo "Invalid VPS_SSH_KEY format (expected OpenSSH private key)."
-            exit 1
-          }
-          echo "DEPLOY_HOST=$HOST" >> "$GITHUB_ENV"
-          echo "DEPLOY_USER=$USER" >> "$GITHUB_ENV"
-          echo "DEPLOY_PORT=$PORT" >> "$GITHUB_ENV"
+          for s in VPS_HOST VPS_PORT VPS_USER VPS_SSH_KEY VPS_KNOWN_HOSTS; do
+            if [ -z "${{ secrets[s] }}" ]; then
+              echo "Missing secret: $s"
+              exit 1
+            fi
+          done
 
-      - name: Prepare SSH key
-        env:
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+      - name: Setup SSH
+        shell: bash
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          : > ~/.ssh/known_hosts
-          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/vps_key
-          chmod 600 ~/.ssh/vps_key
-
-          # Preferred: pinned host keys from repo secret (stable, no network lookup race).
-          if [ -n "${VPS_KNOWN_HOSTS:-}" ]; then
-            printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          else
-            # Fallback: best-effort keyscan with retries.
-            for i in 1 2 3 4 5; do
-              if ssh-keyscan -T 15 -t ed25519,rsa -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null; then
-                break
-              fi
-              if [ "$i" -eq 5 ]; then
-                echo "Failed to fetch SSH host key from $DEPLOY_HOST:$DEPLOY_PORT"
-                echo "Set secret VPS_KNOWN_HOSTS to avoid this failure in the future."
-                exit 1
-              fi
-              sleep 3
-            done
-          fi
-
-          [ -s ~/.ssh/known_hosts ] || { echo "known_hosts is empty"; exit 1; }
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "${{ secrets.VPS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-      - name: Preflight SSH connectivity
-        run: |
-          set -euo pipefail
-          ssh -i ~/.ssh/vps_key \
-            -p "$DEPLOY_PORT" \
-            -o BatchMode=yes \
-            -o ConnectTimeout=15 \
-            -o StrictHostKeyChecking=yes \
-            "$DEPLOY_USER@$DEPLOY_HOST" "echo SSH preflight OK"
-
       - name: Deploy on VPS
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
         run: |
           set -euo pipefail
-          ssh -i ~/.ssh/vps_key -p "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" <<'EOF_REMOTE'
-          set -euxo pipefail
-          cd /var/www/echo-bootcamp
 
-          if [ ! -f .env ]; then
-            echo "Missing /var/www/echo-bootcamp/.env"
-            exit 1
-          fi
-          if ! grep -Eq '^DATABASE_URL=' .env; then
-            echo "Missing DATABASE_URL in /var/www/echo-bootcamp/.env"
-            exit 1
-          fi
+          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" << 'EOF'
+          set -euo pipefail
 
-          if [ -f /root/.ssh/id_ed25519_github ]; then
-            export GIT_SSH_COMMAND='ssh -i /root/.ssh/id_ed25519_github -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes'
-          fi
+          APP_PATH=/var/www/echo-bootcamp
+          APP_NAME=echo-bootcamp
 
+          cd "$APP_PATH"
+
+          # Pull latest
           git fetch origin
-          git checkout main
           git reset --hard origin/main
 
-          rm -rf .next
-          npm ci --no-audit --no-fund
+          # Build and migrate in correct order
+          npm ci
+          npm run prisma:generate
+          npm run prisma:deploy
           npm run build
 
-          pm2 delete echo-bootcamp >/dev/null 2>&1 || true
-          pm2 start /usr/bin/npm --name echo-bootcamp --cwd /var/www/echo-bootcamp -- run start -- --port 3101
+          # Restart app
+          pm2 restart "$APP_NAME" --update-env
           pm2 save
+          EOF
 
-          for i in 1 2 3 4 5; do
-            if curl -fsS http://127.0.0.1:3101/echo-bootcamp/exam >/dev/null; then
-              echo "Deploy successful"
-              exit 0
-            fi
-            echo "Health check attempt $i failed, retrying..."
-            sleep 2
-          done
-
-          echo "Health checks failed on 127.0.0.1:3101"
-          pm2 status || true
-          pm2 logs echo-bootcamp --lines 50 --nostream || true
-          exit 1
-          EOF_REMOTE
