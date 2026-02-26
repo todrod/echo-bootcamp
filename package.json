@@ -12,6 +12,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "import:pdf": "python3 scripts/parse_pdf_to_json.py",
     "import:acs": "python3 scripts/parse_acs_pdf.py",
+    "acs:reload": "npm run import:acs && node scripts/reload_acs_bank.mjs",
     "import:load": "tsx scripts/autotag_and_load.ts",
     "prod": "npm run build && npm run start"
   },

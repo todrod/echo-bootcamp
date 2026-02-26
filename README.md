@@ -104,6 +104,12 @@ npm run import:acs
 
 This writes `data/acs_parsed_debug.json`.
 
+Full ACS refresh (parse + clean reload to exactly 300 ACS questions):
+
+```bash
+npm run acs:reload
+```
+
 ## 5) Auto-tag + Load
 
 ```bash
@@ -179,8 +185,11 @@ UPDATE User SET isAdmin = 1 WHERE username = 'your_username';
 ## Import Pipeline Files
 - `scripts/parse_pdf_to_json.py`
 - `scripts/autotag_and_load.ts`
+- `scripts/parse_acs_pdf.py`
+- `scripts/reload_acs_bank.mjs`
 - `data/questions.raw.json` (generated)
 - `data/questions.tagged.json` (generated)
+- `data/acs_parsed_debug.json` (generated)
 
 ## Base Path Safety
 - `next.config.ts` sets `basePath="/echo-bootcamp"`.

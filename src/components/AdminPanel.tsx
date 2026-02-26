@@ -61,15 +61,21 @@ export function AdminPanel({ weights: initialWeights, questions }: Props) {
     <div className="space-y-6">
       <section className="rounded-2xl bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-semibold">Admin-lite tools</h1>
-        <p className="mt-2 text-sm text-slate-600">Import data, tune weights, and edit question tags/explanations.</p>
+        <p className="mt-2 text-sm text-slate-600">
+          Import exam banks, tune weights, and edit question tags/explanations.
+          ACS import can take a few minutes.
+        </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <button onClick={() => void importQuestions("RSC")} className="rounded-lg bg-cyan-700 px-3 py-2 text-sm font-medium text-white">
             Import RSC bank
           </button>
           <button onClick={() => void importQuestions("ACS")} className="rounded-lg border border-cyan-300/40 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-100">
-            Import ACS bank (300)
+            Re-import ACS bank (300)
           </button>
         </div>
+        <p className="mt-2 text-xs text-slate-500">
+          For a full clean ACS refresh from local data, run <code>npm run acs:reload</code> in terminal.
+        </p>
       </section>
 
       <section className="rounded-2xl bg-white p-6 shadow-sm">

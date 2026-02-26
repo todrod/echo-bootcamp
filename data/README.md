@@ -6,4 +6,5 @@ Generated data files:
 Run:
 - npm run import:pdf
 - npm run import:acs
+- npm run acs:reload
 - npm run import:load
