@@ -111,6 +111,7 @@ async function loadIntoDb(questions: TaggedQuestion[]) {
       await tx.question.upsert({
         where: { id: q.id },
         update: {
+          examTrack: "RSC",
           stem: q.stem,
           category: q.category,
           difficulty: q.difficulty,
@@ -118,6 +119,7 @@ async function loadIntoDb(questions: TaggedQuestion[]) {
         },
         create: {
           id: q.id,
+          examTrack: "RSC",
           stem: q.stem,
           category: q.category,
           difficulty: q.difficulty,
@@ -138,8 +140,8 @@ async function loadIntoDb(questions: TaggedQuestion[]) {
       if (q.correctLabel) {
         await tx.correctAnswer.upsert({
           where: { questionId: q.id },
-          update: { correctLabel: q.correctLabel },
-          create: { questionId: q.id, correctLabel: q.correctLabel },
+          update: { correctLabels: q.correctLabel },
+          create: { questionId: q.id, correctLabels: q.correctLabel },
         });
       }
 

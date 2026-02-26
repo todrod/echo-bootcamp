@@ -9,12 +9,15 @@ type SessionQuestion = {
   orderIndex: number;
   stem: string;
   choices: { label: string; text: string }[];
-  selectedLabel: string | null;
+  selectedLabels: string[];
+  isMultiSelect: boolean;
   markedForReview: boolean;
 };
 
 type SessionProps = {
   attemptId: string;
+  examTrack: "RSC" | "ACS";
+  examTrackLabel: string;
   timed: boolean;
   totalQuestions: number;
   timeLimitMinutes: number | null;
@@ -35,7 +38,7 @@ export function SessionClient(props: SessionProps) {
   });
 
   const current = questions[index];
-  const answeredCount = questions.filter((q) => q.selectedLabel).length;
+  const answeredCount = questions.filter((q) => q.selectedLabels.length > 0).length;
   const remainingCount = props.totalQuestions - answeredCount;
 
   const elapsedMinutes = useMemo(() => {
@@ -86,7 +89,8 @@ export function SessionClient(props: SessionProps) {
       method: "POST",
       body: JSON.stringify({
         questionId: current.questionId,
-        selectedChoice: updated.selectedLabel,
+        selectedChoice: updated.selectedLabels.length <= 1 ? (updated.selectedLabels[0] ?? null) : null,
+        selectedChoices: updated.selectedLabels,
         markedForReview: updated.markedForReview,
         lastViewedQuestionIndex: index,
       }),
@@ -114,15 +118,31 @@ export function SessionClient(props: SessionProps) {
         <p className="text-sm text-slate-400">
           Question {index + 1} / {props.totalQuestions}
         </p>
+        <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-cyan-300/40 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+          <span className="rounded bg-cyan-400/20 px-1.5 py-0.5">{props.examTrack}</span>
+          <span>{props.examTrackLabel}</span>
+        </div>
         <h1 className="mt-2 text-lg font-semibold text-slate-100">{current.stem}</h1>
+        {current.isMultiSelect ? (
+          <p className="mt-1 text-xs text-amber-200">Multi-select: choose all that apply.</p>
+        ) : null}
 
         <div className="mt-4 space-y-2">
           {current.choices.map((choice) => (
             <button
               key={choice.label}
-              onClick={() => void saveAnswer({ selectedLabel: choice.label })}
+              onClick={() => {
+                if (!current.isMultiSelect) {
+                  void saveAnswer({ selectedLabels: [choice.label] });
+                  return;
+                }
+                const selected = current.selectedLabels.includes(choice.label)
+                  ? current.selectedLabels.filter((label) => label !== choice.label)
+                  : [...current.selectedLabels, choice.label].sort();
+                void saveAnswer({ selectedLabels: selected });
+              }}
               className={`block w-full rounded-lg border p-3 text-left text-slate-100 ${
-                current.selectedLabel === choice.label
+                current.selectedLabels.includes(choice.label)
                   ? "border-cyan-300/70 bg-cyan-500/20"
                   : "border-white/20 bg-black/20 hover:border-cyan-300/50 hover:bg-cyan-500/10"
               }`}
@@ -170,7 +190,7 @@ export function SessionClient(props: SessionProps) {
           {questions.map((q, i) => {
             const stateClass = q.markedForReview
               ? "border-amber-300/60 bg-amber-500/10 text-amber-100"
-              : q.selectedLabel
+              : q.selectedLabels.length > 0
                 ? "border-emerald-400/60 bg-emerald-500/10 text-emerald-100"
                 : "border-white/20 bg-black/20 text-slate-100";
             return (

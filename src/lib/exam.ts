@@ -1,5 +1,6 @@
-import { AttemptMode, AttemptStatus, CategoryCode, Prisma } from "@prisma/client";
+import { AttemptMode, AttemptStatus, CategoryCode, ExamTrack, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { getCategoryLabels } from "@/lib/examTracks";
 
 export const DEFAULT_WEIGHTS: Record<CategoryCode, number> = {
   A: 0.1,
@@ -9,20 +10,26 @@ export const DEFAULT_WEIGHTS: Record<CategoryCode, number> = {
   E: 0.15,
 };
 
-export const CATEGORY_LABELS: Record<CategoryCode, string> = {
-  A: "Patient Care / Non-Imaging",
-  B: "Imaging / Acquisition",
-  C: "Valves",
-  D: "Anatomy / Physiology / Hemodynamics / Pathology",
-  E: "Physics / Instrumentation",
-};
-
 function shuffle<T>(items: T[]) {
   for (let i = items.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
     [items[i], items[j]] = [items[j], items[i]];
   }
   return items;
+}
+
+function normalizeLabelsCsv(value: string | null | undefined): string[] {
+  if (!value) return [];
+  return value
+    .split(",")
+    .map((label) => label.trim().toUpperCase())
+    .filter((label): label is string => Boolean(label))
+    .sort();
+}
+
+function sameAnswerSet(a: string[], b: string[]) {
+  if (a.length !== b.length) return false;
+  return a.every((label, idx) => label === b[idx]);
 }
 
 function roundRobinFill(deficit: number, pools: Map<CategoryCode, number[]>, used = new Set<number>()) {
@@ -46,10 +53,10 @@ export async function getWeightsMap() {
   return map;
 }
 
-async function questionPools(categories?: CategoryCode[]) {
+async function questionPools(examTrack: ExamTrack, categories?: CategoryCode[]) {
   const where: Prisma.QuestionWhereInput = categories?.length
-    ? { category: { in: categories } }
-    : { category: { in: ["A", "B", "C", "D", "E"] } };
+    ? { examTrack, category: { in: categories } }
+    : { examTrack, category: { in: ["A", "B", "C", "D", "E"] } };
 
   const questions = await prisma.question.findMany({
     where,
@@ -75,10 +82,11 @@ async function questionPools(categories?: CategoryCode[]) {
 export async function sampleQuestionIds(opts: {
   total: number;
   mode: AttemptMode;
+  examTrack: ExamTrack;
   categories?: CategoryCode[];
   useWeighting: boolean;
 }) {
-  const pools = await questionPools(opts.categories);
+  const pools = await questionPools(opts.examTrack, opts.categories);
   const selected = new Set<number>();
   const warnings: string[] = [];
 
@@ -141,21 +149,24 @@ export async function finalizeAttempt(attemptId: string, expired = false) {
 
   const answers = await prisma.attemptAnswer.findMany({
     where: { attemptId },
-    select: { questionId: true, selectedLabel: true },
+    select: { questionId: true, selectedLabels: true },
   });
 
   const correct = await prisma.correctAnswer.findMany({
     where: { questionId: { in: answers.map((a) => a.questionId) } },
-    select: { questionId: true, correctLabel: true },
+    select: { questionId: true, correctLabels: true },
   });
-  const answerMap = new Map(correct.map((c) => [c.questionId, c.correctLabel]));
+  const answerMap = new Map(correct.map((c) => [c.questionId, normalizeLabelsCsv(c.correctLabels)]));
 
   await prisma.$transaction(
     answers.map((a) =>
       prisma.attemptAnswer.update({
         where: { attemptId_questionId: { attemptId, questionId: a.questionId } },
         data: {
-          isCorrect: a.selectedLabel ? a.selectedLabel === answerMap.get(a.questionId) : false,
+          isCorrect: sameAnswerSet(
+            normalizeLabelsCsv(a.selectedLabels),
+            answerMap.get(a.questionId) ?? [],
+          ),
         },
       }),
     ),
@@ -193,18 +204,20 @@ export async function getAttemptResults(attemptId: string) {
   if (!attempt) throw new Error("Attempt not found");
 
   const ids = attempt.attemptQuestions.map((aq) => aq.questionId);
+  const categoryLabels = getCategoryLabels(attempt.examTrack);
   const corrects = await prisma.correctAnswer.findMany({
     where: { questionId: { in: ids } },
   });
-  const correctMap = new Map(corrects.map((c) => [c.questionId, c.correctLabel]));
+  const correctMap = new Map(corrects.map((c) => [c.questionId, normalizeLabelsCsv(c.correctLabels)]));
 
   const categoryTotals = new Map<string, { total: number; correct: number }>();
   let totalCorrect = 0;
 
   const review = attempt.attemptQuestions.map((aq) => {
     const answer = attempt.answers.find((a) => a.questionId === aq.questionId);
-    const correctLabel = correctMap.get(aq.questionId) ?? "";
-    const isCorrect = answer?.selectedLabel ? answer.selectedLabel === correctLabel : false;
+    const correctLabels = correctMap.get(aq.questionId) ?? [];
+    const userAnswerLabels = normalizeLabelsCsv(answer?.selectedLabels);
+    const isCorrect = sameAnswerSet(userAnswerLabels, correctLabels);
     const category = aq.question.category ?? "A";
 
     if (!categoryTotals.has(category)) categoryTotals.set(category, { total: 0, correct: 0 });
@@ -223,8 +236,8 @@ export async function getAttemptResults(attemptId: string) {
       difficulty: aq.question.difficulty,
       explanation: aq.question.explanation,
       choices: aq.question.choices,
-      userAnswer: answer?.selectedLabel ?? null,
-      correctLabel,
+      userAnswer: userAnswerLabels,
+      correctLabels,
       markedForReview: answer?.markedForReview ?? false,
       isCorrect,
     };
@@ -232,7 +245,7 @@ export async function getAttemptResults(attemptId: string) {
 
   const categoryBreakdown = Array.from(categoryTotals.entries()).map(([category, values]) => ({
     category,
-    label: CATEGORY_LABELS[category as CategoryCode],
+    label: categoryLabels[category as CategoryCode],
     ...values,
     percent: values.total ? Math.round((values.correct / values.total) * 100) : 0,
   })).sort((a, b) => a.percent - b.percent);

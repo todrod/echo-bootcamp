@@ -4,6 +4,14 @@ import { expireAttemptIfNeeded } from "@/lib/exam";
 import { prisma } from "@/lib/prisma";
 import { answerSchema } from "@/lib/validation";
 
+function toCsv(labels: string[] | undefined | null) {
+  if (!labels?.length) return null;
+  const unique = Array.from(new Set(labels.map((label) => label.trim().toUpperCase())))
+    .filter(Boolean)
+    .sort();
+  return unique.length ? unique.join(",") : null;
+}
+
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await getCurrentUser();
@@ -38,16 +46,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       },
     },
     update: {
-      selectedLabel: parsed.selectedChoice ?? null,
+      selectedLabels: toCsv(parsed.selectedChoices ?? (parsed.selectedChoice ? [parsed.selectedChoice] : [])),
       markedForReview: parsed.markedForReview ?? undefined,
-      answeredAt: parsed.selectedChoice ? new Date() : null,
+      answeredAt:
+        (parsed.selectedChoices?.length ?? 0) > 0 || parsed.selectedChoice ? new Date() : null,
     },
     create: {
       attemptId: id,
       questionId: parsed.questionId,
-      selectedLabel: parsed.selectedChoice ?? null,
+      selectedLabels: toCsv(parsed.selectedChoices ?? (parsed.selectedChoice ? [parsed.selectedChoice] : [])),
       markedForReview: parsed.markedForReview ?? false,
-      answeredAt: parsed.selectedChoice ? new Date() : null,
+      answeredAt:
+        (parsed.selectedChoices?.length ?? 0) > 0 || parsed.selectedChoice ? new Date() : null,
     },
   });
 

@@ -16,18 +16,43 @@ export async function POST(req: Request) {
     return fail("Invalid payload", 400);
   }
 
+  const mode = parsed.mode as AttemptMode;
+  const examTrack = parsed.examTrack;
+  const total = mode === "FULL" ? 170 : parsed.count ?? 50;
+  const categories = parsed.categories as CategoryCode[] | undefined;
+
   const existing = await prisma.attempt.findFirst({
     where: { userId: user.id, status: "IN_PROGRESS" },
     orderBy: { startedAt: "desc" },
   });
 
   if (existing) {
-    return ok({ attemptId: existing.id, resumed: true });
-  }
+    if (existing.examTrack === examTrack && existing.mode === mode) {
+      const existingQuestionCount = await prisma.attemptQuestion.count({
+        where: { attemptId: existing.id },
+      });
+      const isStaleFull = mode === "FULL" && existingQuestionCount < 170;
+      const isCorrupt = existingQuestionCount !== existing.totalQuestions || existingQuestionCount < 5;
 
-  const mode = parsed.mode as AttemptMode;
-  const total = mode === "FULL" ? 170 : parsed.count ?? 50;
-  const categories = parsed.categories as CategoryCode[] | undefined;
+      if (!isStaleFull && !isCorrupt) {
+        return ok({ attemptId: existing.id, resumed: true });
+      }
+
+      await prisma.attempt.update({
+        where: { id: existing.id },
+        data: {
+          status: "EXPIRED",
+          finishedAt: new Date(),
+          lastSeenAt: new Date(),
+        },
+      });
+    } else {
+      return fail(
+        `You already have an in-progress ${existing.examTrack} ${existing.mode.toLowerCase()} attempt. Resume or finish it first.`,
+        409,
+      );
+    }
+  }
 
   const timed = parsed.timerSetting !== "UNTIMED";
   const timeLimitMinutes =
@@ -49,6 +74,7 @@ export async function POST(req: Request) {
   const { ids, warnings } = await sampleQuestionIds({
     total,
     mode,
+    examTrack,
     categories,
     useWeighting,
   });
@@ -59,6 +85,7 @@ export async function POST(req: Request) {
     data: {
       userId: user.id,
       mode,
+      examTrack,
       totalQuestions: ids.length,
       timed,
       timeLimitMinutes,
@@ -74,7 +101,7 @@ export async function POST(req: Request) {
         createMany: {
           data: ids.map((questionId) => ({
             questionId,
-            selectedLabel: null,
+            selectedLabels: null,
             isCorrect: null,
             markedForReview: false,
             answeredAt: null,

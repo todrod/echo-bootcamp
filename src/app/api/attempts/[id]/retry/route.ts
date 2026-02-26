@@ -32,6 +32,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     data: {
       userId: source.userId,
       mode: source.mode,
+      examTrack: source.examTrack,
       totalQuestions: source.totalQuestions,
       timed: source.timed,
       timeLimitMinutes: source.timeLimitMinutes,
@@ -50,7 +51,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
         createMany: {
           data: source.attemptQuestions.map((q) => ({
             questionId: q.questionId,
-            selectedLabel: null,
+            selectedLabels: null,
             isCorrect: null,
             markedForReview: false,
             answeredAt: null,

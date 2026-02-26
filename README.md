@@ -10,6 +10,10 @@ Stack:
 - Prisma ORM + MariaDB (MySQL provider)
 - Cookie auth (username + PIN/password, bcrypt)
 
+Exam tracks:
+- `RSC` (Registered Cardiac Sonographer)
+- `ACS` (Advanced Cardiac Sonographer, 300-question bank, includes multi-select items)
+
 ## Routes
 All browser routes are under `basePath="/echo-bootcamp"`.
 
@@ -89,6 +93,17 @@ npm run import:pdf
 
 This writes `data/questions.raw.json`.
 
+ACS source PDF (default):
+- `/Users/todrod/Downloads/ARCS Exam.pdf`
+
+Run ACS parse:
+
+```bash
+npm run import:acs
+```
+
+This writes `data/acs_parsed_debug.json`.
+
 ## 5) Auto-tag + Load
 
 ```bash
@@ -157,6 +172,9 @@ UPDATE User SET isAdmin = 1 WHERE username = 'your_username';
 ```
 
 - Admin page can import tagged data, edit weights, and patch question metadata/explanations.
+- Admin import now supports both tracks:
+  - `Import RSC bank`
+  - `Import ACS bank (300)`
 
 ## Import Pipeline Files
 - `scripts/parse_pdf_to_json.py`

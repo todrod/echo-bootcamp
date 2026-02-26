@@ -7,6 +7,7 @@ export const loginSchema = z.object({
 
 export const createAttemptSchema = z.object({
   mode: z.enum(["FULL", "PRACTICE"]),
+  examTrack: z.enum(["RSC", "ACS"]).default("RSC"),
   count: z.number().int().min(5).max(170).optional(),
   categories: z.array(z.enum(["A", "B", "C", "D", "E"])) .optional(),
   timerSetting: z.enum(["EXACT", "CUSTOM", "UNTIMED"]),
@@ -16,7 +17,8 @@ export const createAttemptSchema = z.object({
 
 export const answerSchema = z.object({
   questionId: z.number().int().positive(),
-  selectedChoice: z.enum(["A", "B", "C", "D"]).nullable().optional(),
+  selectedChoice: z.enum(["A", "B", "C", "D", "E"]).nullable().optional(),
+  selectedChoices: z.array(z.enum(["A", "B", "C", "D", "E"])).optional(),
   markedForReview: z.boolean().optional(),
   lastViewedQuestionIndex: z.number().int().min(0).optional(),
 });

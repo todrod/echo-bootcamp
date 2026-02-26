@@ -15,6 +15,7 @@ export default async function StatsPage() {
     const totalCorrect = a.answers.filter((ans) => ans.isCorrect).length;
     return {
       id: a.id,
+      examTrack: a.examTrack,
       mode: a.mode,
       status: a.status,
       totalCorrect,
@@ -42,6 +43,7 @@ export default async function StatsPage() {
             <tr className="text-left text-slate-300">
               <th>Date</th>
               <th>Mode</th>
+              <th>Track</th>
               <th>Status</th>
               <th>Score</th>
             </tr>
@@ -51,6 +53,7 @@ export default async function StatsPage() {
               <tr key={s.id} className="border-t border-white/10 text-slate-100">
                 <td className="py-2">{s.date.toLocaleString()}</td>
                 <td>{s.mode}</td>
+                <td>{s.examTrack}</td>
                 <td>{s.status}</td>
                 <td>{s.totalCorrect}/{s.total} ({s.percent}%)</td>
               </tr>

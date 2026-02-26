@@ -22,10 +22,13 @@ export function AdminPanel({ weights: initialWeights, questions }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const [editing, setEditing] = useState<QuestionLite | null>(null);
 
-  async function importFromTagged() {
+  async function importQuestions(examTrack: "RSC" | "ACS") {
     setMessage(null);
-    const result = await apiFetch<{ imported: number }>("/api/admin/import", { method: "POST", body: JSON.stringify({}) });
-    setMessage(`Imported ${result.imported} questions.`);
+    const result = await apiFetch<{ imported: number; examTrack: "RSC" | "ACS" }>("/api/admin/import", {
+      method: "POST",
+      body: JSON.stringify({ examTrack }),
+    });
+    setMessage(`Imported ${result.imported} ${result.examTrack} questions.`);
   }
 
   async function saveWeights(e: FormEvent) {
@@ -59,9 +62,14 @@ export function AdminPanel({ weights: initialWeights, questions }: Props) {
       <section className="rounded-2xl bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-semibold">Admin-lite tools</h1>
         <p className="mt-2 text-sm text-slate-600">Import data, tune weights, and edit question tags/explanations.</p>
-        <button onClick={() => void importFromTagged()} className="mt-4 rounded-lg bg-cyan-700 px-3 py-2 text-sm font-medium text-white">
-          Import from data/questions.tagged.json
-        </button>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button onClick={() => void importQuestions("RSC")} className="rounded-lg bg-cyan-700 px-3 py-2 text-sm font-medium text-white">
+            Import RSC bank
+          </button>
+          <button onClick={() => void importQuestions("ACS")} className="rounded-lg border border-cyan-300/40 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-100">
+            Import ACS bank (300)
+          </button>
+        </div>
       </section>
 
       <section className="rounded-2xl bg-white p-6 shadow-sm">

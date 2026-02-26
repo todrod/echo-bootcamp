@@ -12,8 +12,8 @@ type ReviewItem = {
   difficulty: string | null;
   explanation: string | null;
   choices: { id: number; label: string; text: string }[];
-  userAnswer: string | null;
-  correctLabel: string;
+  userAnswer: string[];
+  correctLabels: string[];
   markedForReview: boolean;
   isCorrect: boolean;
 };
@@ -21,11 +21,14 @@ type ReviewItem = {
 type Props = {
   attemptId: string;
   mode: "FULL" | "PRACTICE";
+  examTrack: "RSC" | "ACS";
+  examTrackLabel: string;
   percent: number;
   totalCorrect: number;
   totalQuestions: number;
   timeUsedMinutes: number;
   status: string;
+  categoryLegend: { category: string; label: string }[];
   categoryBreakdown: { category: string; label: string; correct: number; total: number; percent: number }[];
   weakestCategories: { category: string; label: string; correct: number; total: number; percent: number }[];
   missedMost: { questionId: number; misses: number; stem: string }[];
@@ -58,6 +61,10 @@ export function ResultsClient(props: Props) {
     <div className="space-y-6">
       <section className="rounded-2xl border border-white/12 bg-black/30 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur">
         <h1 className="text-2xl font-semibold text-white">Results ({props.status})</h1>
+        <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-cyan-300/40 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+          <span className="rounded bg-cyan-400/20 px-1.5 py-0.5">{props.examTrack}</span>
+          <span>{props.examTrackLabel}</span>
+        </div>
         <p className="mt-2 text-sm text-slate-300">
           Score: {props.totalCorrect}/{props.totalQuestions} ({props.percent}%) • Time used: {props.timeUsedMinutes} min
         </p>
@@ -76,7 +83,13 @@ export function ResultsClient(props: Props) {
             {retrying ? "Starting..." : "Retry same test"}
           </button>
           <button
-            onClick={() => router.push(props.mode === "FULL" ? "/exam/full/setup" : "/exam/practice/setup")}
+            onClick={() =>
+              router.push(
+                props.mode === "FULL"
+                  ? `/exam/full/setup?track=${props.examTrack}`
+                  : `/exam/practice/setup?track=${props.examTrack}`,
+              )
+            }
             className="rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-sm text-slate-100 hover:border-cyan-300/50 hover:bg-cyan-500/10"
           >
             Try different setup
@@ -86,6 +99,13 @@ export function ResultsClient(props: Props) {
 
       <section className="rounded-2xl border border-white/12 bg-black/30 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur">
         <h2 className="text-lg font-semibold text-white">Category breakdown</h2>
+        <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-200">
+          {props.categoryLegend.map((item) => (
+            <span key={item.category} className="rounded-full border border-white/20 bg-white/5 px-2 py-1">
+              {item.category}: {item.label}
+            </span>
+          ))}
+        </div>
         <table className="mt-3 w-full text-sm">
           <thead>
             <tr className="text-left text-slate-300">
@@ -146,8 +166,8 @@ export function ResultsClient(props: Props) {
               <p className="font-medium text-slate-100">{item.stem}</p>
               <ul className="mt-2 space-y-1 text-sm text-slate-200">
                 {item.choices.map((choice) => {
-                  const isUser = item.userAnswer === choice.label;
-                  const isCorrect = item.correctLabel === choice.label;
+                  const isUser = item.userAnswer.includes(choice.label);
+                  const isCorrect = item.correctLabels.includes(choice.label);
                   return (
                     <li key={choice.id} className={`${isUser ? "font-semibold" : ""} ${showCorrect && isCorrect ? "text-emerald-400" : ""}`}>
                       {choice.label}. {choice.text}
@@ -156,8 +176,8 @@ export function ResultsClient(props: Props) {
                 })}
               </ul>
               <p className={`mt-2 text-sm ${item.isCorrect ? "text-emerald-400" : "text-red-300"}`}>
-                Your answer: {item.userAnswer ?? "Unanswered"}
-                {showCorrect ? ` • Correct: ${item.correctLabel}` : ""}
+                Your answer: {item.userAnswer.length ? item.userAnswer.join(", ") : "Unanswered"}
+                {showCorrect ? ` • Correct: ${item.correctLabels.join(", ")}` : ""}
               </p>
               {showExplanations && item.explanation ? (
                 <p className="mt-2 text-sm text-slate-300">Explanation: {item.explanation}</p>

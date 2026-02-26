@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { expireAttemptIfNeeded } from "@/lib/exam";
 import { SessionClient } from "@/components/SessionClient";
+import { getExamTrackLabel } from "@/lib/examTracks";
 
 export default async function SessionPage({ params }: { params: Promise<{ attemptId: string }> }) {
   const { attemptId } = await params;
@@ -24,6 +25,7 @@ export default async function SessionPage({ params }: { params: Promise<{ attemp
           question: {
             include: {
               choices: { orderBy: { label: "asc" } },
+              correctAnswer: true,
             },
           },
         },
@@ -41,7 +43,15 @@ export default async function SessionPage({ params }: { params: Promise<{ attemp
     orderIndex: aq.orderIndex,
     stem: aq.question.stem,
     choices: aq.question.choices,
-    selectedLabel: answerMap.get(aq.questionId)?.selectedLabel ?? null,
+    selectedLabels: (answerMap.get(aq.questionId)?.selectedLabels ?? "")
+      .split(",")
+      .map((label) => label.trim())
+      .filter(Boolean),
+    isMultiSelect:
+      (aq.question.correctAnswer?.correctLabels ?? "")
+        .split(",")
+        .map((label) => label.trim())
+        .filter(Boolean).length > 1,
     markedForReview: answerMap.get(aq.questionId)?.markedForReview ?? false,
   }));
 
@@ -54,6 +64,8 @@ export default async function SessionPage({ params }: { params: Promise<{ attemp
         timeLimitMinutes={attempt.timeLimitMinutes}
         startedAt={attempt.startedAt.toISOString()}
         lastViewedQuestionIndex={attempt.lastViewedQuestionIndex}
+        examTrack={attempt.examTrack}
+        examTrackLabel={getExamTrackLabel(attempt.examTrack)}
         questions={questions}
       />
     </main>

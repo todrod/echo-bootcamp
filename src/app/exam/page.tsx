@@ -34,7 +34,7 @@ export default async function ExamHomePage() {
         {inProgress ? (
           <div className="mt-4 rounded-lg border border-amber-300/50 bg-amber-500/10 p-3 text-sm text-amber-100">
             <p>
-              In-progress attempt found ({inProgress.mode}) • Remaining:
+              In-progress attempt found ({inProgress.examTrack} {inProgress.mode}) • Remaining:
               {remainingSeconds === null ? " untimed" : ` ${Math.max(0, Math.floor(remainingSeconds / 60))} min`}
             </p>
             <Link href={`/exam/session/${inProgress.id}`} className="mt-2 inline-block rounded-lg bg-cyan-500 px-3 py-1 font-medium text-slate-950 hover:bg-cyan-400">
@@ -45,13 +45,21 @@ export default async function ExamHomePage() {
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
-        <Link href="/exam/full/setup" className="rounded-2xl border border-white/12 bg-black/30 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur hover:border-cyan-300/40">
+        <Link href="/exam/full/setup?track=RSC" className="rounded-2xl border border-white/12 bg-black/30 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur hover:border-cyan-300/40">
           <h2 className="text-xl font-semibold text-white">Full Exam Mode</h2>
-          <p className="mt-2 text-sm text-slate-300">170 questions, weighted by category, no feedback until completion.</p>
+          <p className="mt-2 text-sm text-slate-300">RSC default • 170 questions, weighted by category, no feedback until completion.</p>
         </Link>
-        <Link href="/exam/practice/setup" className="rounded-2xl border border-white/12 bg-black/30 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur hover:border-cyan-300/40">
+        <Link href="/exam/practice/setup?track=RSC" className="rounded-2xl border border-white/12 bg-black/30 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur hover:border-cyan-300/40">
           <h2 className="text-xl font-semibold text-white">Practice Mode</h2>
-          <p className="mt-2 text-sm text-slate-300">Choose count, categories, timing and weighting behavior.</p>
+          <p className="mt-2 text-sm text-slate-300">RSC default • Choose count, categories, timing and weighting behavior.</p>
+        </Link>
+        <Link href="/exam/full/setup?track=ACS" className="rounded-2xl border border-cyan-300/20 bg-cyan-500/5 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur hover:border-cyan-300/40">
+          <h2 className="text-xl font-semibold text-white">ACS Full Exam</h2>
+          <p className="mt-2 text-sm text-slate-300">Advanced Cardiac Sonographer bank with full-exam workflow.</p>
+        </Link>
+        <Link href="/exam/practice/setup?track=ACS" className="rounded-2xl border border-cyan-300/20 bg-cyan-500/5 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur hover:border-cyan-300/40">
+          <h2 className="text-xl font-semibold text-white">ACS Practice</h2>
+          <p className="mt-2 text-sm text-slate-300">Practice ACS with custom count, categories, and timing.</p>
         </Link>
         <Link href="/exam/stats" className="rounded-2xl border border-white/12 bg-black/30 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur hover:border-cyan-300/40">
           <h2 className="text-xl font-semibold text-white">Your Stats</h2>

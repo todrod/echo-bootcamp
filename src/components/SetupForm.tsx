@@ -3,21 +3,18 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/client";
+import { CATEGORY_LABELS_BY_TRACK, EXAM_TRACKS } from "@/lib/examTracks";
 
 type SetupFormProps = {
   mode: "FULL" | "PRACTICE";
+  initialExamTrack?: "RSC" | "ACS";
 };
 
-const categories = [
-  { code: "A", label: "Patient Care / Non-Imaging" },
-  { code: "B", label: "Imaging / Acquisition" },
-  { code: "C", label: "Valves" },
-  { code: "D", label: "Anatomy / Physiology / Hemodynamics / Pathology" },
-  { code: "E", label: "Physics / Instrumentation" },
-] as const;
+const categoryCodes = ["A", "B", "C", "D", "E"] as const;
 
-export function SetupForm({ mode }: SetupFormProps) {
+export function SetupForm({ mode, initialExamTrack = "RSC" }: SetupFormProps) {
   const router = useRouter();
+  const [examTrack, setExamTrack] = useState<"RSC" | "ACS">(initialExamTrack);
   const [count, setCount] = useState(mode === "FULL" ? 170 : 50);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [timerSetting, setTimerSetting] = useState<"EXACT" | "CUSTOM" | "UNTIMED">("EXACT");
@@ -31,6 +28,15 @@ export function SetupForm({ mode }: SetupFormProps) {
     if (mode === "FULL") return 170;
     return count;
   }, [count, mode]);
+
+  const categories = useMemo(
+    () =>
+      categoryCodes.map((code) => ({
+        code,
+        label: CATEGORY_LABELS_BY_TRACK[examTrack][code],
+      })),
+    [examTrack],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -53,6 +59,7 @@ export function SetupForm({ mode }: SetupFormProps) {
     try {
       const payload = {
         mode,
+        examTrack,
         count: total,
         categories: selectedCategories.length ? selectedCategories : undefined,
         timerSetting,
@@ -85,6 +92,25 @@ export function SetupForm({ mode }: SetupFormProps) {
   return (
     <form onSubmit={submit} className="space-y-6 rounded-2xl border border-white/12 bg-black/30 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur">
       <h1 className="text-2xl font-semibold text-white">{mode === "FULL" ? "Full Exam Setup" : "Practice Setup"}</h1>
+      <div>
+        <p className="mb-2 text-sm font-medium text-slate-100">Exam track</p>
+        <div className="flex flex-wrap gap-2">
+          {EXAM_TRACKS.map((track) => (
+            <button
+              key={track.id}
+              type="button"
+              onClick={() => setExamTrack(track.id)}
+              className={`rounded-lg border px-3 py-1 text-sm ${
+                examTrack === track.id
+                  ? "border-cyan-300/70 bg-cyan-500/20 text-cyan-100"
+                  : "border-white/20 bg-black/20 text-slate-200 hover:border-cyan-300/50 hover:bg-cyan-500/10"
+              }`}
+            >
+              {track.label}
+            </button>
+          ))}
+        </div>
+      </div>
       {resumeAttemptId ? (
         <button
           type="button"
